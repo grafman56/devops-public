@@ -1,0 +1,87 @@
+---
+# Member server: rename, join, then take on its role.
+#
+# The join uses the domain Administrator. A real estate uses a delegated
+# service account with join rights on a single OU, and that account lives in
+# Vault, not in this file.
+
+- name: Rename and join the domain in one step
+  microsoft.ad.membership:
+    dns_domain_name: "{{ domain_name }}"
+    hostname: "{{ hostname }}"
+    domain_admin_user: "{{ vault_domain_admin_user }}"
+    domain_admin_password: "{{ vault_domain_admin_password }}"
+    state: domain
+    reboot: true
+    reboot_timeout: 1800
+  register: join_result
+
+- name: Confirm the join
+  ansible.windows.win_shell: (Get-CimInstance Win32_ComputerSystem).Domain
+  register: joined_domain
+  changed_when: false
+
+- name: Assert the host reports the lab domain
+  ansible.builtin.assert:
+    that:
+      - joined_domain.stdout | trim | lower == domain_name | lower
+    fail_msg: "host reports domain '{{ joined_domain.stdout | trim }}', expected '{{ domain_name }}'"
+
+- name: Install IIS
+  ansible.windows.win_feature:
+    name:
+      - Web-Server
+      - Web-Mgmt-Tools
+    state: present
+  register: iis_feature
+
+- name: Reboot after IIS
+  ansible.windows.win_reboot:
+    reboot_timeout: 900
+    post_reboot_delay: 30
+  when: iis_feature.reboot_required | default(false)
+
+- name: Create the site root
+  ansible.windows.win_file:
+    path: "{{ site_path }}"
+    state: directory
+
+- name: Write the landing page
+  ansible.windows.win_copy:
+    content: |
+      <!doctype html>
+      <html lang="en">
+        <body>
+          <h1>{{ inventory_hostname }}</h1>
+          <p>Built by Packer, provisioned by Terraform, configured by Ansible.</p>
+          <p>Domain: {{ domain_name }}</p>
+        </body>
+      </html>
+    dest: "{{ site_path }}\\index.html"
+
+- name: Create the website
+  microsoft.iis.website:
+    name: "{{ site_name }}"
+    physical_path: "{{ site_path }}"
+    state: started
+    bindings:
+      - protocol: http
+        ip: "*"
+        port: 80
+        hostname: ""
+
+- name: Prove the site serves the page locally
+  ansible.windows.win_shell: |
+    $r = Invoke-WebRequest -Uri "http://localhost/" -UseBasicParsing -TimeoutSec 20
+    "$($r.StatusCode)|$($r.Content -match '{{ inventory_hostname }}')"
+  register: site_probe
+  changed_when: false
+  retries: 6
+  delay: 5
+  until: site_probe.rc == 0
+
+- name: Assert the probe saw the right page
+  ansible.builtin.assert:
+    that:
+      - site_probe.stdout | trim == "200|True"
+    fail_msg: "site probe returned '{{ site_probe.stdout | trim }}'"

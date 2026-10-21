@@ -1,0 +1,25 @@
+---
+# WinRM over HTTPS. The image presents a self-signed certificate whose subject
+# is the build name, and every clone is renamed, so validation cannot pass.
+# ignore is a lab setting. A managed estate uses a certificate from an internal
+# CA whose name matches the host, plus validate.
+ansible_connection: winrm
+ansible_port: 5986
+ansible_winrm_scheme: https
+ansible_winrm_transport: ntlm
+ansible_winrm_server_cert_validation: ignore
+ansible_winrm_operation_timeout_sec: 120
+ansible_winrm_read_timeout_sec: 240
+
+ansible_user: Administrator
+ansible_password: "{{ vault_local_admin_password }}"
+
+# Windows names the virtio NIC "Ethernet" on a clean clone.
+dns_interface: Ethernet
+timezone: UTC
+
+# Shared by both roles.
+domain_name: lab.example.internal
+domain_netbios_name: LAB
+domain_dns_forwarders:
+  - 192.0.2.1

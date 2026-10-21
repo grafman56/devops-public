@@ -1,0 +1,29 @@
+---
+# Requires an ingress controller. The matching install is documented in
+# kubernetes/README.md with chart ingress-nginx 4.15.1.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/part-of: example
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - app.example.internal
+      secretName: example-tls
+  rules:
+    - host: app.example.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  name: http

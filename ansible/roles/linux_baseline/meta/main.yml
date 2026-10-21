@@ -1,0 +1,19 @@
+galaxy_info:
+  role_name: linux_baseline
+  author: learner
+  description: Baseline packages, users, SSH keys and sysctl for Debian and RedHat family hosts.
+  license: MIT
+  min_ansible_version: "2.21"
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+    - name: Ubuntu
+      versions:
+        - resolute
+  galaxy_tags:
+    - linux
+    - users
+    - ssh
+
+dependencies: []

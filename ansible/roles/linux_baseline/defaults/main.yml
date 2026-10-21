@@ -1,0 +1,32 @@
+---
+# Packages installed on every host. Keep the list small and justified.
+baseline_packages:
+  - ca-certificates
+  - curl
+  - git
+  - htop
+  - tmux
+  - vim
+
+baseline_timezone: "UTC"
+
+# Users to create. Each entry: name, groups, shell, ssh_keys.
+baseline_users: []
+
+# Groups applied when a user entry omits groups.
+baseline_default_user_groups:
+  - sudo
+
+# Write a sudoers drop-in for the members of the sudo group.
+baseline_manage_sudoers: true
+baseline_sudo_nopasswd: false
+
+# Manage /etc/ssh/sshd_config. Set false if another tool owns that file.
+baseline_manage_sshd: true
+baseline_ssh_password_authentication: false
+baseline_ssh_permit_root_login: "no"
+baseline_ssh_allowed_users: []
+
+# sysctl keys written to /etc/sysctl.d/99-baseline.conf.
+baseline_sysctl:
+  net.ipv4.tcp_syncookies: 1

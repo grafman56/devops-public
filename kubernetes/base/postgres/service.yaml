@@ -1,0 +1,18 @@
+---
+# Headless service. StatefulSet pods get stable DNS names:
+#   db-0.db-headless.<namespace>.svc.cluster.local
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-headless
+  labels:
+    app.kubernetes.io/name: db
+    app.kubernetes.io/part-of: example
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: db
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres

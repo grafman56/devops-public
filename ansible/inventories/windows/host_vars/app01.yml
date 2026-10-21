@@ -1,0 +1,6 @@
+---
+# Member server. DNS points at the DC before the join, because the join needs
+# the domain's SRV records and nothing else will answer them.
+hostname: app01
+dns_servers:
+  - 192.0.2.241

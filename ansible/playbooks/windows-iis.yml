@@ -1,0 +1,6 @@
+---
+- name: Windows IIS web server
+  hosts: windows_iis
+  gather_facts: true
+  roles:
+    - windows_iis

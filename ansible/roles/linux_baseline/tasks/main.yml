@@ -1,0 +1,80 @@
+---
+- name: Install baseline packages on Debian family hosts
+  ansible.builtin.apt:
+    name: "{{ baseline_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install baseline packages on RedHat family hosts
+  ansible.builtin.dnf:
+    name: "{{ baseline_packages }}"
+    state: present
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Create baseline users
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    groups: "{{ item.groups | default(baseline_default_user_groups) | join(',') }}"
+    append: true
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    create_home: true
+    state: present
+  loop: "{{ baseline_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Install authorized SSH keys
+  ansible.posix.authorized_key:
+    user: "{{ item.0.name }}"
+    key: "{{ item.1 }}"
+    state: present
+  loop: "{{ baseline_users | subelements('ssh_keys', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.0.name }}"
+
+- name: Write the sudoers drop-in
+  ansible.builtin.template:
+    src: sudoers-baseline.j2
+    dest: /etc/sudoers.d/90-baseline-users
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  when: baseline_manage_sudoers | bool
+
+- name: Set the timezone
+  community.general.timezone:
+    name: "{{ baseline_timezone }}"
+
+- name: Apply sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-baseline.conf
+    sysctl_set: true
+    state: present
+    reload: true
+  loop: "{{ baseline_sysctl | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Write sshd_config
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "sshd -t -f %s"
+  notify: Restart sshd
+  when:
+    - baseline_manage_sshd | bool
+    - ansible_facts['os_family'] == 'Debian'
+
+- name: Ensure the SSH service is enabled and running
+  ansible.builtin.service:
+    name: "{{ 'ssh' if ansible_facts['os_family'] == 'Debian' else 'sshd' }}"
+    state: started
+    enabled: true

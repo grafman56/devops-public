@@ -1,0 +1,6 @@
+---
+# First DC. Before promotion it resolves through the firewall; the ad_dc role
+# moves it onto itself afterwards.
+hostname: dc01
+dns_servers:
+  - 192.0.2.1

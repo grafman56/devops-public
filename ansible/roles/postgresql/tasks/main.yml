@@ -1,0 +1,99 @@
+---
+- name: Install PostgreSQL
+  ansible.builtin.apt:
+    name: "{{ postgresql_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure PostgreSQL is enabled and running
+  ansible.builtin.service:
+    name: "{{ postgresql_service }}"
+    state: started
+    enabled: true
+
+# Ask the server where pg_hba.conf lives instead of guessing a path that
+# changes with every PostgreSQL major version.
+- name: Read the pg_hba.conf path from the server
+  community.postgresql.postgresql_query:
+    query: SHOW hba_file
+  become: true
+  become_user: postgres
+  register: postgresql_hba_file_query
+  changed_when: false
+
+- name: Set the listen_addresses parameter
+  community.postgresql.postgresql_alter_system:
+    param: listen_addresses
+    value: "{{ postgresql_listen_addresses }}"
+  become: true
+  become_user: postgres
+  notify: Restart PostgreSQL
+
+- name: Apply pg_hba rules
+  community.postgresql.postgresql_pg_hba:
+    dest: "{{ postgresql_hba_file_query.query_result[0].hba_file }}"
+    contype: "{{ item.contype }}"
+    databases: "{{ item.databases }}"
+    users: "{{ item.users }}"
+    address: "{{ item.address | default(omit) }}"
+    method: "{{ item.method }}"
+    comment: "{{ item.comment | default(omit) }}"
+    state: present
+  loop: "{{ postgresql_hba_rules }}"
+  loop_control:
+    label: "{{ item.users }} -> {{ item.databases }}"
+  become: true
+  become_user: postgres
+  notify: Reload PostgreSQL
+
+- name: Create PostgreSQL roles
+  community.postgresql.postgresql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    role_attr_flags: "{{ item.role_attr_flags | default('LOGIN') }}"
+    state: present
+  loop: "{{ postgresql_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  become: true
+  become_user: postgres
+  no_log: true
+
+- name: Create PostgreSQL databases
+  community.postgresql.postgresql_db:
+    name: "{{ item.name }}"
+    owner: "{{ item.owner }}"
+    state: present
+  loop: "{{ postgresql_databases }}"
+  loop_control:
+    label: "{{ item.name }}"
+  become: true
+  become_user: postgres
+
+- name: Create the backup directory
+  ansible.builtin.file:
+    path: "{{ postgresql_backup_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0700"
+  when: postgresql_backup_enabled | bool
+
+- name: Install the backup script
+  ansible.builtin.template:
+    src: pg-backup.sh.j2
+    dest: /usr/local/sbin/pg-backup.sh
+    owner: root
+    group: root
+    mode: "0750"
+  when: postgresql_backup_enabled | bool
+
+- name: Schedule the nightly backup
+  ansible.builtin.cron:
+    name: PostgreSQL nightly dump
+    hour: "{{ postgresql_backup_hour }}"
+    minute: "{{ postgresql_backup_minute }}"
+    user: postgres
+    job: /usr/local/sbin/pg-backup.sh
+    state: "{{ 'present' if postgresql_backup_enabled | bool else 'absent' }}"

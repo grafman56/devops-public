@@ -1,0 +1,25 @@
+#cloud-config
+# Ubuntu autoinstall answer file.
+#
+# Reference:
+# https://canonical-subiquity.readthedocs.io/en/latest/reference/autoinstall-reference.html
+#
+# The password hash below is for the placeholder password "packer".
+# Replace it, or better: build with SSH keys and allow-pw: false.
+# Create a new hash with: openssl passwd -6
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  identity:
+    hostname: ubuntu-template
+    username: packer
+    password: "$6$y4xtdlPOk/Duea7n$aOlmjbTDurw.WqySD6Qf1U7d6RB4sGCmzvQfMiBJNBrIz3qHZ/5vPcqq/.XOIeuA5O3guyKHTOmFV.LtX1g4T0"
+  ssh:
+    install-server: true
+    allow-pw: true
+  packages:
+    - qemu-guest-agent
+  late-commands:
+    - curtin in-target --target=/target -- systemctl enable qemu-guest-agent

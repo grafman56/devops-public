@@ -1,0 +1,26 @@
+# Managed by Ansible.
+# Reference: https://nginx.org/en/docs/http/ngx_http_core_module.html
+server {
+    listen {{ item.listen_port | default(80) }};
+{% if item.tls | default(false) | bool %}
+    listen {{ item.ssl_port | default(443) }} ssl;
+    http2 on;
+    ssl_certificate     {{ nginx_tls_dir }}/{{ item.name }}.crt;
+    ssl_certificate_key {{ nginx_tls_dir }}/{{ item.name }}.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+{% endif %}
+
+    server_name {{ item.server_name }};
+    root {{ item.root }};
+    index index.html;
+
+    access_log /var/log/nginx/{{ item.name }}.access.log;
+    error_log  /var/log/nginx/{{ item.name }}.error.log;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}

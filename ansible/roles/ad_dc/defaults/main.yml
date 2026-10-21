@@ -1,0 +1,10 @@
+---
+domain_name: lab.example.internal
+domain_netbios_name: LAB
+domain_dns_forwarders:
+  - 192.0.2.1
+
+# domain_mode is left unset on purpose. microsoft.ad.domain validates the value
+# against the modes the running OS supports, and the default picks the highest.
+# Set it to Win2025 explicitly once you have confirmed the DC reports that
+# functional level, so the intent is visible in the diff.

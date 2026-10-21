@@ -1,0 +1,31 @@
+---
+# Database settings for hosts in the "database" group.
+#
+# Passwords live in group_vars/vault.yml, encrypted with ansible-vault:
+#   ansible-vault encrypt inventories/linux/group_vars/vault.yml
+# The plain file is ignored by .gitignore.
+postgresql_listen_addresses: "0.0.0.0"
+
+postgresql_users:
+  - name: appuser
+    password: "{{ vault_postgresql_app_password }}"
+    role_attr_flags: "LOGIN"
+
+postgresql_databases:
+  - name: appdb
+    owner: appuser
+
+# Rules are appended to pg_hba.conf. The module needs the real file path,
+# which the role asks PostgreSQL for at run time.
+postgresql_hba_rules:
+  - contype: host
+    databases: appdb
+    users: appuser
+    address: 192.0.2.0/24
+    method: scram-sha-256
+    comment: "app subnet"
+
+postgresql_backup_enabled: true
+postgresql_backup_hour: "2"
+postgresql_backup_minute: "15"
+postgresql_backup_retention_days: 7

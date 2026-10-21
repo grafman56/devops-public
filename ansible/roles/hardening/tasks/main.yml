@@ -1,0 +1,124 @@
+---
+# Baseline hardening. Applied after the domain join, never before.
+#
+# secedit is not idempotent and reports no useful changed state, so those tasks
+# run with changed_when false and are followed by a read-back assertion. That
+# is the honest way to handle it: the assertion is the idempotence guarantee,
+# not the task's changed flag.
+
+- name: Require SMB signing on the server side
+  ansible.windows.win_regedit:
+    path: HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
+    name: RequireSecuritySignature
+    data: "{{ 1 if smb_server_require_signing else 0 }}"
+    type: dword
+
+- name: Require SMB signing on the client side
+  ansible.windows.win_regedit:
+    path: HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters
+    name: RequireSecuritySignature
+    data: "{{ 1 if smb_client_require_signing else 0 }}"
+    type: dword
+
+- name: Keep NTLMv2 at the highest level
+  ansible.windows.win_regedit:
+    path: HKLM:\SYSTEM\CurrentControlSet\Control\Lsa
+    name: LmCompatibilityLevel
+    data: 5
+    type: dword
+
+- name: Restrict outbound NTLM
+  ansible.windows.win_regedit:
+    path: HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\MSV1_0
+    name: RestrictSendingNTLMTraffic
+    data: "{{ ntlm_restrict_outgoing }}"
+    type: dword
+
+- name: Restrict inbound NTLM
+  ansible.windows.win_regedit:
+    path: HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\MSV1_0
+    name: RestrictReceivingNTLMTraffic
+    data: "{{ ntlm_restrict_incoming }}"
+    type: dword
+
+- name: Block outbound NTLM to remote servers when the audit says it is safe
+  ansible.windows.win_regedit:
+    path: HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\MSV1_0
+    name: RestrictSendingNTLMTraffic
+    data: 2
+    type: dword
+  when: restrict_ntlm_targets | default(false)
+
+- name: Remove SMBv1
+  ansible.windows.win_optional_feature:
+    name: SMB1Protocol
+    state: absent
+  register: smb1
+
+- name: Reboot if SMBv1 removal asked for it
+  ansible.windows.win_reboot:
+    reboot_timeout: 900
+    post_reboot_delay: 30
+  when: smb1.reboot_required | default(false)
+
+- name: Render the local security policy
+  ansible.builtin.template:
+    src: security_policy.inf.j2
+    dest: C:\Windows\Temp\security_policy.inf
+
+- name: Apply the local security policy
+  ansible.windows.win_shell: |
+    secedit /configure /db C:\Windows\security\local.sdb /cfg C:\Windows\Temp\security_policy.inf /areas SECURITYPOLICY /quiet
+  changed_when: false
+
+- name: Export the effective policy for verification
+  ansible.windows.win_shell: |
+    secedit /export /cfg C:\Windows\Temp\secpol-effective.inf /areas SECURITYPOLICY /quiet
+    Get-Content C:\Windows\Temp\secpol-effective.inf
+  register: secpol
+  changed_when: false
+
+- name: Assert the password policy took effect
+  ansible.builtin.assert:
+    that:
+      - expected_min_length_line in secpol.stdout
+      - "'PasswordComplexity = 1' in secpol.stdout"
+      - expected_lockout_line in secpol.stdout
+    fail_msg: "local security policy did not match the requested values"
+  vars:
+    expected_min_length_line: "MinimumPasswordLength = {{ password_min_length }}"
+    expected_lockout_line: "LockoutBadCount = {{ lockout_threshold }}"
+
+- name: Set audit subcategories
+  ansible.windows.win_audit_policy_system:
+    subcategory: "{{ item.subcategory }}"
+    audit_type: "{{ item.audit_type }}"
+  loop: "{{ audit_subcategories }}"
+  loop_control:
+    label: "{{ item.subcategory }}"
+
+- name: Enforce RDP off
+  ansible.windows.win_regedit:
+    path: HKLM:\System\CurrentControlSet\Control\Terminal Server
+    name: fDenyTSConnections
+    data: 1
+    type: dword
+
+- name: Enable PowerShell script block logging
+  ansible.windows.win_regedit:
+    path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging
+    name: EnableScriptBlockLogging
+    data: 1
+    type: dword
+
+- name: Verify SMB signing is on
+  ansible.windows.win_shell: |
+    (Get-SmbServerConfiguration).RequireSecuritySignature
+  register: smb_signing
+  changed_when: false
+
+- name: Assert SMB signing
+  ansible.builtin.assert:
+    that:
+      - smb_signing.stdout | trim | lower == 'true'
+    fail_msg: "SMB server signing is not enabled"

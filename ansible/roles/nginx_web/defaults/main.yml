@@ -1,0 +1,12 @@
+---
+nginx_packages:
+  - nginx
+
+# Remove /etc/nginx/sites-enabled/default. Set false if another site owns it.
+nginx_remove_default_site: true
+
+# Each site: name, server_name, root, listen_port, tls, index_content.
+nginx_sites: []
+
+nginx_tls_dir: /etc/nginx/tls
+nginx_tls_not_after: "+3650d"

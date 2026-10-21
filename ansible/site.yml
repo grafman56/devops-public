@@ -1,0 +1,32 @@
+---
+# Order matters.
+#
+# 1. Baseline and rename, so the name is settled before anything records it.
+# 2. Promote the DC, because members need DNS and a domain to join.
+# 3. Join members and give them their roles.
+# 4. Harden last. NTLM restrictions applied before a domain join will break
+#    that join, and that failure is confusing to debug on a fresh estate.
+
+- name: Baseline every Windows host
+  hosts: windows
+  gather_facts: true
+  roles:
+    - common
+
+- name: Promote the domain controller
+  hosts: windows_dcs
+  gather_facts: false
+  roles:
+    - ad_dc
+
+- name: Join and configure member servers
+  hosts: windows_members
+  gather_facts: false
+  roles:
+    - app01
+
+- name: Harden after identity is settled
+  hosts: windows
+  gather_facts: false
+  roles:
+    - hardening

@@ -1,0 +1,64 @@
+---
+# Nightly logical backup. A CronJob runs one pod per schedule.
+# Reference: https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup
+  labels:
+    app.kubernetes.io/name: db
+    app.kubernetes.io/part-of: example
+spec:
+  schedule: "15 2 * * *"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: db-backup
+            app.kubernetes.io/part-of: example
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: backup
+              image: postgres:18.6-trixie
+              command:
+                - /bin/sh
+                - -c
+              args:
+                - |
+                  set -eu
+                  pg_dump -h db-0.db-headless -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -Fc -f "/backup/${POSTGRES_DB}-$(date +%F).dump"
+                  find /backup -name '*.dump' -type f -mtime +7 -delete
+              envFrom:
+                - secretRef:
+                    name: db-credentials
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: db-backup

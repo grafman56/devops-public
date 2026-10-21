@@ -1,0 +1,10 @@
+---
+# Copy this file to vault.yml in the same directory, fill in values, then:
+#   ansible-vault encrypt inventories/linux/group_vars/vault.yml
+#
+# Never commit the encrypted file's password. Pass it with --ask-vault-pass
+# or --vault-password-file outside the repository.
+
+vault_postgresql_app_password: "replace-me"
+vault_docker_db_password: "replace-me"
+vault_windows_iis_local_password: "replace-me"

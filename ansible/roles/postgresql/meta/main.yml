@@ -1,0 +1,18 @@
+galaxy_info:
+  role_name: postgresql
+  author: learner
+  description: Install PostgreSQL, manage roles and databases, and schedule a nightly dump.
+  license: MIT
+  min_ansible_version: "2.21"
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+    - name: Ubuntu
+      versions:
+        - resolute
+  galaxy_tags:
+    - postgresql
+    - database
+
+dependencies: []

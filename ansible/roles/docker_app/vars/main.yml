@@ -1,0 +1,8 @@
+---
+# Docker publishes separate repositories per distribution.
+docker_apt_uri: >-
+  {{ 'https://download.docker.com/linux/ubuntu'
+     if ansible_facts['distribution'] == 'Ubuntu'
+     else 'https://download.docker.com/linux/debian' }}
+docker_apt_key_url: "{{ docker_apt_uri }}/gpg"
+docker_apt_arch: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else ansible_facts['architecture'] }}"

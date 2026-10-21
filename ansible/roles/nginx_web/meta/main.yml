@@ -1,0 +1,18 @@
+galaxy_info:
+  role_name: nginx_web
+  author: learner
+  description: Install nginx and serve one or more static sites, with optional self-signed TLS.
+  license: MIT
+  min_ansible_version: "2.21"
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+    - name: Ubuntu
+      versions:
+        - resolute
+  galaxy_tags:
+    - nginx
+    - web
+
+dependencies: []

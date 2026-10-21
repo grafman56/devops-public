@@ -1,0 +1,14 @@
+#!/bin/sh
+# Managed by Ansible. Dumps every database, then removes old dumps.
+# Reference: https://www.postgresql.org/docs/current/app-pg-dumpall.html
+set -eu
+
+BACKUP_DIR="{{ postgresql_backup_dir }}"
+RETENTION_DAYS="{{ postgresql_backup_retention_days }}"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+
+pg_dumpall --clean --if-exists --quote-all-identifiers \
+  | gzip -9 > "${BACKUP_DIR}/all-databases-${STAMP}.sql.gz"
+
+find "${BACKUP_DIR}" -name 'all-databases-*.sql.gz' -type f \
+  -mtime "+${RETENTION_DAYS}" -delete

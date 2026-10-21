@@ -1,0 +1,15 @@
+---
+iis_site_name: ExampleSite
+iis_site_path: C:\sites\example
+iis_app_pool: ExampleAppPool
+iis_port: 8080
+iis_content: |
+  <!doctype html>
+  <html lang="en">
+    <head><meta charset="utf-8"><title>Example</title></head>
+    <body><h1>Example site</h1><p>Served by IIS.</p></body>
+  </html>
+
+# The application pool runs as this local account.
+iis_local_user: svc-example
+iis_local_password: "change-me"

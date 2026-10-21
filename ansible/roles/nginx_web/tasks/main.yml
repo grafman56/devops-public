@@ -1,0 +1,114 @@
+---
+- name: Install nginx
+  ansible.builtin.apt:
+    name: "{{ nginx_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create site document roots
+  ansible.builtin.file:
+    path: "{{ item.root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Write site index pages
+  ansible.builtin.copy:
+    content: "{{ item.index_content }}"
+    dest: "{{ item.root }}/index.html"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Create the TLS directory
+  ansible.builtin.file:
+    path: "{{ nginx_tls_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: nginx_sites | selectattr('tls', 'defined') | selectattr('tls') | list | length > 0
+
+- name: Create self-signed private keys
+  community.crypto.openssl_privatekey:
+    path: "{{ nginx_tls_dir }}/{{ item.name }}.key"
+    type: RSA
+    size: 2048
+    mode: "0600"
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.tls | default(false) | bool
+
+- name: Create self-signed certificate requests
+  community.crypto.openssl_csr:
+    path: "{{ nginx_tls_dir }}/{{ item.name }}.csr"
+    privatekey_path: "{{ nginx_tls_dir }}/{{ item.name }}.key"
+    common_name: "{{ item.server_name }}"
+    subject_alt_name:
+      - "DNS:{{ item.server_name }}"
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.tls | default(false) | bool
+
+- name: Sign the self-signed certificates
+  community.crypto.x509_certificate:
+    path: "{{ nginx_tls_dir }}/{{ item.name }}.crt"
+    privatekey_path: "{{ nginx_tls_dir }}/{{ item.name }}.key"
+    csr_path: "{{ nginx_tls_dir }}/{{ item.name }}.csr"
+    provider: selfsigned
+    selfsigned_not_after: "{{ nginx_tls_not_after }}"
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.tls | default(false) | bool
+
+- name: Write site configurations
+  ansible.builtin.template:
+    src: site.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.name }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify:
+    - Validate nginx configuration
+    - Reload nginx
+
+- name: Enable site configurations
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ item.name }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.name }}.conf"
+    state: link
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify:
+    - Validate nginx configuration
+    - Reload nginx
+
+- name: Remove the default site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  when: nginx_remove_default_site | bool
+  notify:
+    - Validate nginx configuration
+    - Reload nginx
+
+- name: Ensure nginx is enabled and running
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true

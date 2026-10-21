@@ -1,0 +1,38 @@
+---
+# Every control here is something you should be able to explain out loud.
+# Add a control only with a reason.
+
+# SMB signing. Both directions, because half-signed SMB is not signed SMB.
+smb_server_require_signing: true
+smb_client_require_signing: true
+
+# NTLM. 1 is audit, 2 is block. Start at audit, read the event log for a week,
+# then move to block on the member servers. The DC keeps NTLM for the lab.
+# Setting this to 2 before the domain join will break the join.
+ntlm_restrict_outgoing: 1
+ntlm_restrict_incoming: 1
+restrict_ntlm_targets: false
+
+# Local account hygiene.
+password_min_length: 14
+password_history: 24
+lockout_threshold: 5
+lockout_minutes: 15
+lockout_duration_minutes: 15
+maximum_password_age_days: 365
+
+# Audit subcategories worth having on a lab server.
+audit_subcategories:
+  - subcategory: Logon
+    audit_type:
+      - success
+      - failure
+  - subcategory: "Process Creation"
+    audit_type:
+      - success
+  - subcategory: "Account Lockout"
+    audit_type:
+      - success
+  - subcategory: "Security Group Management"
+    audit_type:
+      - success

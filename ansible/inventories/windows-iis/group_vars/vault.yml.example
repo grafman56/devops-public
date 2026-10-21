@@ -1,0 +1,4 @@
+---
+# Copy to vault.yml in this directory, set the value, then:
+#   ansible-vault encrypt inventories/windows-iis/group_vars/vault.yml
+vault_windows_iis_local_password: "replace-me"

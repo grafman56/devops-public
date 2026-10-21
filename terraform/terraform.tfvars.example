@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars and adjust. No secrets belong in this file.
+
+proxmox_endpoint = "https://pve.example.internal:8006/"
+proxmox_node     = "pve"
+template_node    = "pve"
+template_vm_id   = 9000
+template_name    = "tpl-win2025-dc"
+storage_pool     = "local-lvm"
+bridge           = "vmbr0"
+
+# Leave null for an untagged bridge.
+vlan_id = null
+
+# Do not start lab VMs when the host reboots.
+start_on_boot = false

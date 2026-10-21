@@ -1,0 +1,13 @@
+---
+nginx_sites:
+  - name: example
+    server_name: app.lab.example.internal
+    root: /var/www/example
+    listen_port: 80
+    tls: false
+    index_content: |
+      <!doctype html>
+      <html lang="en">
+        <head><meta charset="utf-8"><title>Example</title></head>
+        <body><h1>Example site</h1><p>Served by nginx on {{ inventory_hostname }}.</p></body>
+      </html>

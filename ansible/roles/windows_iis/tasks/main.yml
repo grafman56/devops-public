@@ -1,0 +1,75 @@
+---
+# Module references at the pinned collection versions:
+# https://galaxy.ansible.com/ui/repo/published/ansible/windows/docs/
+# https://galaxy.ansible.com/ui/repo/published/microsoft/iis/docs/
+
+- name: Install IIS
+  ansible.windows.win_feature:
+    name: Web-Server
+    state: present
+    include_management_tools: true
+
+- name: Create the site directory
+  ansible.windows.win_file:
+    path: "{{ iis_site_path }}"
+    state: directory
+
+- name: Write the site content
+  ansible.windows.win_copy:
+    content: "{{ iis_content }}"
+    dest: "{{ iis_site_path }}\\index.html"
+
+- name: Create the application pool identity
+  ansible.windows.win_user:
+    name: "{{ iis_local_user }}"
+    password: "{{ iis_local_password }}"
+    password_never_expires: true
+    update_password: on_create
+    state: present
+  no_log: true
+
+- name: Create the application pool
+  microsoft.iis.web_app_pool:
+    name: "{{ iis_app_pool }}"
+    state: started
+    attributes:
+      managedRuntimeVersion: ""
+      processModel.identityType: SpecificUser
+      processModel.userName: "{{ iis_local_user }}"
+      processModel.password: "{{ iis_local_password }}"
+  no_log: true
+
+- name: Create the website
+  microsoft.iis.website:
+    name: "{{ iis_site_name }}"
+    physical_path: "{{ iis_site_path }}"
+    application_pool: "{{ iis_app_pool }}"
+    state: started
+    bindings:
+      set:
+        # "*" binds every address IIS does not otherwise assign.
+        - ip: "*"
+          port: "{{ iis_port }}"
+          protocol: http
+
+- name: Enable anonymous authentication
+  microsoft.iis.authentication:
+    site: "{{ iis_site_name }}"
+    auth_type: AnonymousAuthentication
+    enabled: true
+
+- name: Disable Windows authentication for this site
+  microsoft.iis.authentication:
+    site: "{{ iis_site_name }}"
+    auth_type: WindowsAuthentication
+    enabled: false
+
+- name: Open the site port
+  ansible.windows.win_firewall_rule:
+    name: "IIS {{ iis_site_name }} {{ iis_port }}"
+    localport: "{{ iis_port }}"
+    protocol: tcp
+    direction: in
+    action: allow
+    state: present
+    enabled: true

@@ -1,0 +1,57 @@
+---
+# Baseline for every host: prove the image is the pipeline image, settle the
+# name, point DNS, and make sure the management channel survives reboots.
+
+- name: Read the image build marker
+  ansible.windows.win_shell: Get-Content C:\image-build.txt -ErrorAction SilentlyContinue
+  register: image_marker
+  changed_when: false
+  failed_when: false
+
+- name: Refuse to configure a host that did not come from the image pipeline
+  ansible.builtin.assert:
+    that:
+      - image_marker.rc == 0
+      - "'image=win2025-gold' in image_marker.stdout"
+    fail_msg: >-
+      C:\image-build.txt is missing or does not name the gold image. This VM
+      was not built by Packer from tpl-win2025-dc, so stop and rebuild it.
+    quiet: true
+
+- name: Set the computer name
+  ansible.windows.win_hostname:
+    name: "{{ hostname }}"
+  register: rename_result
+
+# After the rename the self-signed WinRM certificate no longer matches the
+# hostname. certificate validation is already disabled in group_vars, so the
+# channel keeps working. A managed estate issues a new certificate here.
+- name: Reboot after the rename
+  ansible.windows.win_reboot:
+    reboot_timeout: 900
+    post_reboot_delay: 30
+  when: rename_result.reboot_required | default(false)
+
+- name: Point the NIC at the right DNS servers
+  ansible.windows.win_dns_client:
+    interface: "{{ dns_interface }}"
+    dns_servers: "{{ dns_servers }}"
+  when: dns_servers | length > 0
+
+- name: Set the timezone
+  ansible.windows.win_timezone:
+    timezone: "{{ timezone }}"
+
+- name: Keep WinRM starting automatically
+  ansible.windows.win_service:
+    name: WinRM
+    start_mode: auto
+    state: started
+
+- name: Raise the WinRS shell memory limit
+  ansible.windows.win_shell: winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="2048"}'
+  changed_when: false
+
+- name: Record the build marker as a local fact for later plays
+  ansible.builtin.set_fact:
+    image_build: "{{ image_marker.stdout_lines | default([]) }}"

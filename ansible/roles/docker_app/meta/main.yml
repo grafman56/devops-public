@@ -1,0 +1,19 @@
+galaxy_info:
+  role_name: docker_app
+  author: learner
+  description: Install Docker Engine from the official repository and run a compose application.
+  license: MIT
+  min_ansible_version: "2.21"
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+    - name: Ubuntu
+      versions:
+        - resolute
+  galaxy_tags:
+    - docker
+    - compose
+    - containers
+
+dependencies: []

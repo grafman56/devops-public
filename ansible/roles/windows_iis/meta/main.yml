@@ -1,0 +1,16 @@
+galaxy_info:
+  role_name: windows_iis
+  author: learner
+  description: Install IIS, create an application pool identity, a site and a firewall rule.
+  license: MIT
+  min_ansible_version: "2.21"
+  platforms:
+    - name: Windows
+      versions:
+        - "2025"
+  galaxy_tags:
+    - windows
+    - iis
+    - web
+
+dependencies: []

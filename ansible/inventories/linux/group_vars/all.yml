@@ -1,0 +1,40 @@
+---
+# Users created on every Linux host in this inventory.
+# ssh_keys holds public keys only. Keep private keys off the repo.
+baseline_users:
+  - name: deploy
+    groups:
+      - sudo
+    shell: /bin/bash
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMPLE0000 deploy@example"
+  - name: ops
+    groups:
+      - sudo
+    shell: /bin/bash
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMPLE0001 ops@example"
+
+baseline_timezone: "UTC"
+
+baseline_packages:
+  - ca-certificates
+  - curl
+  - git
+  - htop
+  - tmux
+  - vim
+
+# Refuse password logins and root logins over SSH.
+baseline_ssh_password_authentication: false
+baseline_ssh_permit_root_login: "no"
+
+# Optional: restrict SSH to these accounts. Empty means no AllowUsers line.
+baseline_ssh_allowed_users:
+  - deploy
+  - ops
+
+baseline_sysctl:
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.tcp_syncookies: 1
+  vm.swappiness: 10

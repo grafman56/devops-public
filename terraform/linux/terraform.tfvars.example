@@ -1,0 +1,38 @@
+# Copy to terraform.tfvars and replace every placeholder.
+# terraform.tfvars is ignored by .gitignore. Never commit real addresses,
+# tokens or keys to this repository.
+
+proxmox_endpoint   = "https://pve.example.internal:8006/api2/json"
+proxmox_insecure   = true
+proxmox_node       = "pve01"
+template_vm_id     = 9001
+datastore_id       = "local-lvm"
+bridge             = "vmbr0"
+vlan_id            = null
+ipv4_gateway       = "192.0.2.1"
+dns_servers        = ["192.0.2.53"]
+dns_domain         = "lab.example.internal"
+initial_username   = "ansible"
+
+ssh_public_keys = [
+  "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMPLE0000 learner@example",
+]
+
+vms = {
+  web01 = {
+    vm_id        = 9201
+    ipv4_address = "192.0.2.11/24"
+    cores        = 2
+    memory       = 2048
+    disk_size    = 20
+    tags         = ["web"]
+  }
+  db01 = {
+    vm_id        = 9202
+    ipv4_address = "192.0.2.12/24"
+    cores        = 4
+    memory       = 4096
+    disk_size    = 40
+    tags         = ["database"]
+  }
+}

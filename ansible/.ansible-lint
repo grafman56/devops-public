@@ -1,0 +1,10 @@
+---
+profile: basic
+parseable: true
+exclude_paths:
+  - .cache/
+warn_list:
+  - no-changed-when
+  - risky-shell-pipe
+skip_list:
+  - yaml[line-length]

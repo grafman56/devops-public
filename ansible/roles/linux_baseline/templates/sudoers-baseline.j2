@@ -1,0 +1,6 @@
+# Managed by Ansible. Validate with: visudo -cf /etc/sudoers.d/90-baseline-users
+{% if baseline_sudo_nopasswd | bool %}
+%sudo ALL=(ALL:ALL) NOPASSWD: ALL
+{% else %}
+%sudo ALL=(ALL:ALL) ALL
+{% endif %}

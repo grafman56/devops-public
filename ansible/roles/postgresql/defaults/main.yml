@@ -1,0 +1,27 @@
+---
+# python3-psycopg2 is the driver the community.postgresql modules need on the target.
+postgresql_packages:
+  - postgresql
+  - python3-psycopg2
+
+postgresql_service: postgresql
+
+# "localhost" is the safe default. Use the host's real address, or 0.0.0.0
+# only when a firewall and pg_hba.conf both restrict access.
+postgresql_listen_addresses: "localhost"
+
+# Each user: name, password, role_attr_flags.
+postgresql_users: []
+
+# Each database: name, owner.
+postgresql_databases: []
+
+# Rules appended to pg_hba.conf. Each rule: contype, databases, users,
+# address, method, comment.
+postgresql_hba_rules: []
+
+postgresql_backup_enabled: true
+postgresql_backup_dir: /var/backups/postgresql
+postgresql_backup_hour: "2"
+postgresql_backup_minute: "15"
+postgresql_backup_retention_days: 7

@@ -1,0 +1,20 @@
+# Remote state, MinIO on VM 201. Uncomment after the first successful local
+# apply, then run: terraform init -migrate-state
+#
+# terraform {
+#   backend "s3" {
+#     bucket = "terraform-state"
+#     key    = "win2025-estate/proxmox.tfstate"
+#     region = "us-east-1" # MinIO ignores the value but the backend requires one
+#
+#     endpoints = {
+#       s3 = "http://192.0.2.229:9000"
+#     }
+#
+#     use_path_style              = true
+#     skip_credentials_validation = true
+#     skip_region_validation      = true
+#     skip_requesting_account_id  = true
+#     skip_s3_checksum            = true
+#   }
+# }

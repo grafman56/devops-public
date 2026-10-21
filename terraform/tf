@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Thin Terraform wrapper: loads local credentials, checks the API token, then
+# hands every argument to terraform.
+#
+# Credentials come from .env.local, which is gitignored, or from Vault at
+# runtime in whatever way your host prefers:
+#   vault-get.sh secret/example/windows-estate >> .env.local
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+if [ -f .env.local ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . ./.env.local
+  set +a
+fi
+
+if [ -z "${PROXMOX_VE_API_TOKEN:-}" ]; then
+  echo "PROXMOX_VE_API_TOKEN is not set" >&2
+  echo "expected format: terraform@pve!tf=<uuid>" >&2
+  exit 1
+fi
+
+exec terraform "$@"

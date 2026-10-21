@@ -1,0 +1,23 @@
+build/
+*.iso
+*.bin
+plan.bin
+terraform.tfstate
+terraform.tfstate.backup
+.terraform/
+# Provider lock files stay in version control. They pin provider checksums.
+crash.log
+packer_cache/
+*.log
+inventories/windows/group_vars/secrets.yml
+!inventories/windows/group_vars/secrets.yml.example
+# Local variable files and secrets
+*.tfvars
+!*.tfvars.example
+*.pkrvars.hcl
+!*.pkrvars.hcl.example
+inventories/*/group_vars/vault.yml
+!inventories/*/group_vars/vault.yml.example
+inventories/windows-iis/group_vars/vault.yml
+vault-key
+.env

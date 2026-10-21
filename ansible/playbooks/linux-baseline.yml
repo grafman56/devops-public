@@ -1,0 +1,7 @@
+---
+- name: Linux baseline
+  hosts: linux
+  become: true
+  gather_facts: true
+  roles:
+    - linux_baseline

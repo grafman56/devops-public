@@ -1,0 +1,21 @@
+---
+# Base layer. Apply through an overlay, not directly:
+#   kubectl apply -k kubernetes/overlays/dev
+#
+# API versions below are stable in Kubernetes 1.37.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - networkpolicy.yaml
+  - postgres/statefulset.yaml
+  - postgres/service.yaml
+  - postgres/networkpolicy.yaml
+  - postgres/backup-cronjob.yaml
+  - postgres/backup-pvc.yaml
