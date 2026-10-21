@@ -1,4 +1,4 @@
-# server-admin
+# Devops tools & Templates
 
 Infrastructure-as-code templates for learning: Packer images, Terraform
 infrastructure, Ansible configuration, and Kubernetes manifests.
